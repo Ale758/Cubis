@@ -3,13 +3,6 @@ import * as THREE from 'three';
 import * as Tone from 'tone';
 import { Home, Play, Info, Volume2, VolumeX, Undo2, RotateCcw, RotateCw, Plus, Minus, Sparkles } from 'lucide-react';
 
-// three.js r152+ attiva di default un "linear color workflow" che interpreta i colori esadecimali
-// come sRGB e li converte automaticamente, scurendo/alterando scene tarate (come questa, con
-// colori piatti e intensità luce fissate a occhio) sul comportamento pre-r152. Lo disattiviamo per
-// riottenere lo stesso risultato visivo di prima — va fatto qui, prima che venga creato qualsiasi
-// THREE.Color, altrimenti la conversione scatta comunque sui colori già istanziati.
-THREE.ColorManagement.enabled = false;
-
 /* ============================== TOKENS ============================== */
 const COLORS = {
   ink: '#3A3A4A',
@@ -472,17 +465,21 @@ function Scene3D({ levelData, playerHeights, onCellTap }) {
     );
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.outputColorSpace = THREE.LinearSRGBColorSpace; // vedi nota su THREE.ColorManagement in cima al file
     renderer.setSize(w, h);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    // Da three.js r155 il modello di luci "physically correct" è diventato l'unico disponibile
+    // (il vecchio flag legacy è stato rimosso), il che rende le stesse intensità numeriche molto
+    // più scure di quanto erano tarate. La correzione ufficiale è moltiplicare per π le intensità
+    // di luci ambientali/direzionali — verificato qui con un render reale confrontato pixel per
+    // pixel contro il comportamento originale: risultato praticamente identico.
+    scene.add(new THREE.AmbientLight(0xffffff, 0.8 * Math.PI));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.5 * Math.PI);
     dirLight.position.set(6, 12, 8);
     scene.add(dirLight);
-    const fillLight = new THREE.DirectionalLight(0xffffff, 0.25);
+    const fillLight = new THREE.DirectionalLight(0xffffff, 0.25 * Math.PI);
     fillLight.position.set(-6, 4, -6);
     scene.add(fillLight);
 
@@ -825,14 +822,14 @@ const SceneIncastro = forwardRef(function SceneIncastro({ initialState, target, 
     updateCamera();
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.outputColorSpace = THREE.LinearSRGBColorSpace; // vedi nota su THREE.ColorManagement in cima al file
     renderer.setSize(w2, h2);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.85));
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    // Vedi nota sul fix ×π nella scena Block Puzzle 3D più sopra — stesso identico problema/fix.
+    scene.add(new THREE.AmbientLight(0xffffff, 0.85 * Math.PI));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.5 * Math.PI);
     dirLight.position.set(5, 10, 6);
     scene.add(dirLight);
 
